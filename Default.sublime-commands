@@ -1,0 +1,6 @@
+[
+    {
+        "caption": "OCMOD: Create modifier from selection",
+        "command": "create_ocmod_file_modifier"
+    }
+]
