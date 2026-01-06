@@ -2,6 +2,5 @@
     {
         "caption": "OCMOD: Создать модификатор",
         "command": "create_ocmod_file_modifier"
-    },
-    { "caption": "-" }
+    }
 ]

@@ -1,43 +1,47 @@
 import sublime
 import sublime_plugin
-import os
 
 class CreateOcmodFileModifierCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        file_path = self.view.file_name()
-        if not file_path:
-            sublime.error_message("Ошибка: Сначала сохраните файл!")
+        view = self.view
+        full_path = view.file_name()
+
+        if not full_path:
             return
 
-        # Определяем относительный путь файла
-        relative_path = file_path
-        folders = self.view.window().folders()
-        for folder in folders:
-            if file_path.startswith(folder):
-                relative_path = os.path.relpath(file_path, folder)
-                break
-        
-        # Очистка пути от префиксов (например, для OpenCart 3/4)
-        prefixes_to_strip = ["upload/", "src/"]
-        for prefix in prefixes_to_strip:
-            if relative_path.startswith(prefix):
-                relative_path = relative_path[len(prefix):]
+        # 1. Переворачиваем слеши
+        path = full_path.replace('\\', '/')
 
-        for region in self.view.sel():
-            if not region.empty():
-                selected_text = self.view.substr(region)
-                
-                # Формируем структуру OCMOD
-                ocmod_block = (
-                    f'<file path="{relative_path}">\n'
-                    '    <operation>\n'
-                    f'        <search><![CDATA[{selected_text}]]></search>\n'
-                    f'        <add position="replace"><![CDATA[{selected_text}]]></add>\n'
-                    '    </operation>\n'
-                    '</file>'
-                )
-                self.view.replace(edit, region, ocmod_block)
+        # 2. Отрезаем всё до admin/ или catalog/
+        # Проверяем оба варианта и оставляем хвост
+        if 'admin/' in path:
+            path = 'admin/' + path.split('admin/', 1)[1]
+        elif 'catalog/' in path:
+            path = 'catalog/' + path.split('catalog/', 1)[1]
+        else:
+            # Если это системный файл или другой, берем как есть, 
+            # но слеши уже исправлены выше
+            pass
 
-    # Пункт меню будет активен только если выделен текст
-    def is_enabled(self):
-        return any(not r.empty() for r in self.view.sel())
+        # 3. Берем текст (выделенный или всю строку)
+        sel = view.sel()[0]
+        if sel.empty():
+            line_region = view.line(sel)
+        else:
+            line_region = sel
+            
+        search_text = view.substr(line_region).strip()
+
+        # 4. Формируем XML OCMOD
+        ocmod_template = (
+            f'<file path="{path}">\n'
+            f'    <operation>\n'
+            f'        <search><![CDATA[{search_text}]]></search>\n'
+            f'        <add position="after"><![CDATA[\n'
+            f'            \n'
+            f'        ]]></add>\n'
+            f'    </operation>\n'
+            f'</file>'
+        )
+
+        sublime.set_clipboard(ocmod_template)
