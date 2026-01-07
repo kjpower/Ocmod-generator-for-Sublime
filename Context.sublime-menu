@@ -1,6 +1,6 @@
 [
     {
-        "caption": "OCMOD: Создать модификатор",
+        "caption": "Сгенерировать ocmod",
         "command": "create_ocmod_file_modifier"
     }
 ]
